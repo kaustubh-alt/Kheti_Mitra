@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minimal API Tester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 10px;
+      }
+      .chat-height {
+        height: calc(100vh - 400px);
+        min-height: 300px;
+      }
+    </style>
+  </head>
+  <body class="bg-[#0f172a] text-slate-200 min-h-screen p-4 md:p-8 font-sans">
+    <div class="max-w-5xl mx-auto">
+      <header class="mb-8 flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-tight text-blue-400">
+          API<span class="text-slate-100">TESTER</span>
+        </h1>
+        <div class="flex bg-slate-800 p-1 rounded-lg">
+          <button
+            onclick="switchMode('http')"
+            id="btn-http"
+            class="px-4 py-1.5 rounded-md text-sm font-medium transition bg-blue-600 text-white"
+          >
+            HTTP / REST
+          </button>
+          <button
+            onclick="switchMode('ws')"
+            id="btn-ws"
+            class="px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white"
+          >
+            WebSocket
+          </button>
+        </div>
+      </header>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 space-y-6">
+          <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+            <label
+              class="block text-xs font-semibold uppercase text-slate-500 mb-2"
+              >Endpoint URL</label
+            >
+            <input
+              id="url"
+              type="text"
+              placeholder="https://api.example.com/data"
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+
+            <div id="http-options" class="mt-4">
+              <label
+                class="block text-xs font-semibold uppercase text-slate-500 mb-2"
+                >Method</label
+              >
+              <select
+                id="method"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm outline-none"
+              >
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+
+            <button
+              id="main-action-btn"
+              onclick="handleAction()"
+              class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-900/20"
+            >
+              SEND REQUEST
+            </button>
+          </div>
+
+          <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+            <h3 class="text-xs font-semibold uppercase text-slate-500 mb-3">
+              Headers (JSON)
+            </h3>
+            <textarea
+              id="headers"
+              placeholder='{"Authorization": "Bearer token"}'
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono h-24 outline-none focus:border-slate-500"
+            >
+{}</textarea
+            >
+          </div>
+
+          <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700">
+            <h3 class="text-xs font-semibold uppercase text-slate-500 mb-3">
+              Attachments
+            </h3>
+            <input
+              type="file"
+              id="file-input"
+              class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600 cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <div class="lg:col-span-2">
+          <div id="view-http" class="space-y-4">
+            <div
+              class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 h-full"
+            >
+              <h3 class="text-xs font-semibold uppercase text-slate-500 mb-3">
+                Request Body (JSON)
+              </h3>
+              <textarea
+                id="body"
+                placeholder='{"name": "test"}'
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm font-mono h-32 outline-none focus:border-slate-500 mb-4"
+              ></textarea>
+
+              <h3 class="text-xs font-semibold uppercase text-slate-500 mb-3">
+                Response
+              </h3>
+              <div
+                id="response-output"
+                class="w-full bg-black/40 border border-slate-700 rounded-lg p-4 text-sm font-mono overflow-auto chat-height text-green-400"
+              >
+                Waiting for request...
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="view-ws"
+            class="hidden flex flex-col bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden"
+          >
+            <div
+              id="ws-status"
+              class="bg-slate-900/50 px-4 py-2 text-[10px] uppercase tracking-widest text-slate-500 border-b border-slate-700"
+            >
+              Disconnected
+            </div>
+            <div
+              id="ws-chat-log"
+              class="p-4 overflow-y-auto chat-height flex flex-col space-y-3"
+            >
+              <div class="text-center text-slate-600 text-xs italic">
+                Connect to a WebSocket server to start chatting
+              </div>
+            </div>
+            <div
+              class="p-4 bg-slate-900/50 border-t border-slate-700 flex gap-2"
+            >
+              <input
+                id="ws-input"
+                type="text"
+                placeholder="Send message..."
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm outline-none focus:border-blue-500"
+              />
+              <button
+                onclick="sendWS()"
+                class="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 transition"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentMode = "http";
+      let socket = null;
+
+      function switchMode(mode) {
+        currentMode = mode;
+        document
+          .getElementById("view-http")
+          .classList.toggle("hidden", mode !== "http");
+        document
+          .getElementById("view-ws")
+          .classList.toggle("hidden", mode !== "ws");
+
+        // UI Toggle
+        const btnHttp = document.getElementById("btn-http");
+        const btnWs = document.getElementById("btn-ws");
+        const mainBtn = document.getElementById("main-action-btn");
+        const urlInput = document.getElementById("url");
+
+        if (mode === "http") {
+          btnHttp.className =
+            "px-4 py-1.5 rounded-md text-sm font-medium transition bg-blue-600 text-white";
+          btnWs.className =
+            "px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white";
+          mainBtn.innerText = "SEND REQUEST";
+          mainBtn.className =
+            "w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-blue-900/20";
+          urlInput.placeholder = "https://api.example.com/data";
+        } else {
+          btnWs.className =
+            "px-4 py-1.5 rounded-md text-sm font-medium transition bg-purple-600 text-white";
+          btnHttp.className =
+            "px-4 py-1.5 rounded-md text-sm font-medium transition text-slate-400 hover:text-white";
+          mainBtn.innerText = socket ? "DISCONNECT" : "CONNECT WS";
+          mainBtn.className =
+            "w-full mt-6 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition shadow-lg shadow-purple-900/20";
+          urlInput.placeholder = "wss://echo.websocket.org";
+        }
+      }
+
+      async function handleAction() {
+        const url = document.getElementById("url").value;
+        if (!url) return alert("Please enter a URL");
+
+        if (currentMode === "http") {
+          performHttp();
+        } else {
+          toggleWS(url);
+        }
+      }
+
+      async function performHttp() {
+        const output = document.getElementById("response-output");
+        const method = document.getElementById("method").value;
+        const url = document.getElementById("url").value;
+        const headersRaw = document.getElementById("headers").value;
+        const bodyRaw = document.getElementById("body").value;
+        const fileInput = document.getElementById("file-input");
+
+        output.innerText = "Loading...";
+        output.classList.remove("text-red-400", "text-green-400");
+
+        try {
+          let options = {
+            method: method,
+            headers: JSON.parse(headersRaw || "{}"),
+          };
+
+          // Handle File + Data
+          if (method !== "GET") {
+            if (fileInput.files.length > 0) {
+              const formData = new FormData();
+              formData.append("file", fileInput.files[0]);
+              if (bodyRaw) formData.append("data", bodyRaw);
+              options.body = formData;
+              // Browser sets Content-Type automatically for FormData
+            } else {
+              options.body = bodyRaw;
+              if (!options.headers["Content-Type"])
+                options.headers["Content-Type"] = "application/json";
+            }
+          }
+
+          const response = await fetch(url, options);
+          const data = await response.json();
+          output.innerText = JSON.stringify(data, null, 2);
+          output.classList.add("text-green-400");
+        } catch (err) {
+          output.innerText = "Error: " + err.message;
+          output.classList.add("text-red-400");
+        }
+      }
+
+      function toggleWS(url) {
+        const status = document.getElementById("ws-status");
+        const btn = document.getElementById("main-action-btn");
+
+        if (socket) {
+          socket.close();
+          return;
+        }
+
+        try {
+          socket = new WebSocket(url);
+          status.innerText = "Connecting...";
+
+          socket.onopen = () => {
+            status.innerText = "Connected";
+            status.classList.replace("text-slate-500", "text-green-400");
+            btn.innerText = "DISCONNECT";
+            addChatMessage("System", "Connection established", "system");
+          };
+
+          socket.onmessage = (e) => addChatMessage("Server", e.data, "in");
+
+          socket.onclose = () => {
+            status.innerText = "Disconnected";
+            status.classList.replace("text-green-400", "text-slate-500");
+            btn.innerText = "CONNECT WS";
+            addChatMessage("System", "Connection closed", "system");
+            socket = null;
+          };
+
+          socket.onerror = (err) =>
+            addChatMessage("Error", "WebSocket error occurred", "system");
+        } catch (e) {
+          alert("WS Error: " + e.message);
+        }
+      }
+
+      function sendWS() {
+        const input = document.getElementById("ws-input");
+        if (socket && socket.readyState === WebSocket.OPEN && input.value) {
+          socket.send(input.value);
+          addChatMessage("You", input.value, "out");
+          input.value = "";
+        }
+      }
+
+      function addChatMessage(sender, text, type) {
+        const log = document.getElementById("ws-chat-log");
+        const msgDiv = document.createElement("div");
+
+        if (type === "system") {
+          msgDiv.className =
+            "text-center text-[10px] text-slate-500 uppercase tracking-tighter py-2";
+          msgDiv.innerText = text;
+        } else {
+          const isOut = type === "out";
+          msgDiv.className = `flex ${isOut ? "justify-end" : "justify-start"}`;
+          msgDiv.innerHTML = `
+                    <div class="max-w-[80%] ${isOut ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-200"} rounded-2xl px-4 py-2 shadow-sm text-sm">
+                        <div class="text-[10px] opacity-50 mb-1 font-bold">${sender}</div>
+                        ${text}
+                    </div>
+                `;
+        }
+
+        log.appendChild(msgDiv);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // Add header/file logic to WS also?
+      // WS typically uses query params for headers on connect, but messages can be data.
+    </script>
+  </body>
+</html>
