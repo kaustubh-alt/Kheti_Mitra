@@ -2,7 +2,7 @@ from google import genai
 import asyncio
 
 # The new version uses the 'Client' class for all interactions
-client = genai.Client(api_key="AIzaSyCci4VUc18A0xZ6h5G-Pu1U_EktHur6LZo")
+client = genai.Client(api_key="")
 
 async def get_gemini_response(prompt):
     # The new method is 'models.generate_content_stream'
